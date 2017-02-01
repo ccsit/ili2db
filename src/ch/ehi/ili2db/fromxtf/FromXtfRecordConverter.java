@@ -31,6 +31,7 @@ import ch.ehi.ili2db.mapping.Viewable2TableMapping;
 import ch.ehi.ili2db.mapping.ViewableWrapper;
 import ch.ehi.sqlgen.repository.DbTableName;
 import ch.interlis.ili2c.metamodel.AbstractClassDef;
+import ch.interlis.ili2c.metamodel.AbstractLeafElement;
 import ch.interlis.ili2c.metamodel.AreaType;
 import ch.interlis.ili2c.metamodel.AssociationDef;
 import ch.interlis.ili2c.metamodel.AttributeDef;
@@ -63,9 +64,9 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 	private String dbusr=null;
 	private boolean isItfReader;
 	private XtfidPool oidPool=null;
-	private HashMap tag2class=null;
+	private HashMap<?, ?> tag2class=null;
 	
-	public FromXtfRecordConverter(TransferDescription td1, NameMapping ili2sqlName,HashMap tag2class1,
+	public FromXtfRecordConverter(TransferDescription td1, NameMapping ili2sqlName,HashMap<?, ?> tag2class1,
 			Config config,
 			DbIdGen idGen1,SqlColumnConverter geomConv1,Connection conn1,String dbusr1,boolean isItfReader1,
 			XtfidPool oidPool1,TrafoConfig trafoConfig,	
@@ -88,9 +89,9 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 		}
 		
 	}
-	public void writeRecord(long basketSqlId, IomObject iomObj,Viewable iomClass,
+	public void writeRecord(long basketSqlId, IomObject iomObj,Viewable<?> iomClass,
 			StructWrapper structEle, ViewableWrapper aclass, String sqlType,
-			long sqlId, boolean updateObj, PreparedStatement ps,ArrayList structQueue)
+			long sqlId, boolean updateObj, PreparedStatement ps,ArrayList<StructWrapper> structQueue)
 			throws SQLException, ConverterException {
 		int valuei=1;
 		
@@ -149,8 +150,8 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 			}
 		}
  
-		HashSet attrs=getIomObjectAttrs(iomClass);
-		Iterator iter = aclass.getAttrIterator();
+		HashSet<AbstractLeafElement> attrs=getIomObjectAttrs(iomClass);
+		Iterator<?> iter = aclass.getAttrIterator();
 		while (iter.hasNext()) {
 			ViewableTransferElement obj = (ViewableTransferElement)iter.next();
 			if (obj.obj instanceof AttributeDef) {
@@ -243,13 +244,13 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 		}
 	}
 	private void setReferenceColumn(PreparedStatement ps,
-			AbstractClassDef destination, String refoid, Holder<Integer> valuei) throws SQLException {
+			AbstractClassDef<?> destination, String refoid, Holder<Integer> valuei) throws SQLException {
 	  	String targetRootClassName=Ili2cUtility.getRootViewable(destination).getScopedName(null);
 	  	ViewableWrapper targetObjTable=null;
 		ArrayList<ViewableWrapper> targetTables = getTargetTables(destination);
 	  	if(refoid!=null){
 		  	String targetObjClass=oidPool.getObjecttag(targetRootClassName,refoid);
-		  	targetObjTable=getViewableWrapper(getSqlType((Viewable) tag2class.get(targetObjClass)).getName());
+		  	targetObjTable=getViewableWrapper(getSqlType((Viewable<?>) tag2class.get(targetObjClass)).getName());
 		  	while(!targetTables.contains(targetObjTable)){
 		  		targetObjTable=targetObjTable.getExtending();
 		  	}
@@ -267,9 +268,9 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 				valuei.value++;
 		  }
 	}
-	public HashSet getIomObjectAttrs(Viewable aclass) {
-		HashSet ret=new HashSet();
-		Iterator iter = aclass.getAttributesAndRoles2();
+	public HashSet<AbstractLeafElement> getIomObjectAttrs(Viewable<?> aclass) {
+		HashSet<AbstractLeafElement> ret=new HashSet<AbstractLeafElement>();
+		Iterator<?> iter = aclass.getAttributesAndRoles2();
 		while (iter.hasNext()) {
 		   ViewableTransferElement obj = (ViewableTransferElement)iter.next();
 		   if (obj.obj instanceof AttributeDef) {
@@ -320,7 +321,7 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 	 * @param aclass viewable
 	 * @return insert statement
 	 */
-	public String createInsertStmt(boolean isUpdate,Viewable iomClass,DbTableName sqlTableName,ViewableWrapper aclass,StructWrapper structEle){
+	public String createInsertStmt(boolean isUpdate,Viewable<?> iomClass,DbTableName sqlTableName,ViewableWrapper aclass,StructWrapper structEle){
 		StringBuffer ret = new StringBuffer();
 		StringBuffer values = new StringBuffer();
 		//INSERT INTO table_name (column1,column2,column3,...)
@@ -420,8 +421,8 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 							sep=",";
 						}else{
 							ret.append(sep);
-							Viewable parentViewable=getViewable(structEle.getParentSqlType());
-							ViewableWrapper parentTable=getViewableWrapperOfAbstractClass((Viewable)structEle.getParentAttr().getContainer(),parentViewable);
+							Viewable<?> parentViewable=getViewable(structEle.getParentSqlType());
+							ViewableWrapper parentTable=getViewableWrapperOfAbstractClass((Viewable<?>)structEle.getParentAttr().getContainer(),parentViewable);
 							ret.append(ili2sqlName.mapIliAttributeDefReverse(structEle.getParentAttr(),sqlTableName.getName(),parentTable.getSqlTablename()));
 							if(isUpdate){
 								ret.append("=?");
@@ -444,8 +445,8 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 			}
 		}
 		
-		HashSet attrs=getIomObjectAttrs(iomClass);
-		Iterator iter = aclass.getAttrIterator();
+		HashSet<?> attrs=getIomObjectAttrs(iomClass);
+		Iterator<?> iter = aclass.getAttrIterator();
 		while (iter.hasNext()) {
 		   ViewableTransferElement obj = (ViewableTransferElement)iter.next();
 		   if (obj.obj instanceof AttributeDef) {
@@ -542,29 +543,29 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 		return ret.toString();
 	}
 	private ViewableWrapper getViewableWrapperOfAbstractClass(
-			Viewable abstractClass, Viewable concreteClass) {
+			Viewable<?> abstractClass, Viewable<?> concreteClass) {
 		ViewableWrapper ret=class2wrapper.get(abstractClass);
 		if(ret!=null){
 			return ret;
 		}
 		ret=class2wrapper.get(concreteClass);
-		concreteClass=(Viewable) concreteClass.getExtending();
+		concreteClass=(Viewable<?>) concreteClass.getExtending();
 		if(concreteClass!=null && concreteClass!=abstractClass){
 			ViewableWrapper ret2=class2wrapper.get(concreteClass);
 			if(ret2!=null){
 				ret=ret2;
 			}
-			concreteClass=(Viewable) concreteClass.getExtending();
+			concreteClass=(Viewable<?>) concreteClass.getExtending();
 		}
 		return ret;
 	}
 	public ViewableWrapper getViewableWrapper(String sqlType){
-		Viewable aclass = getViewable(sqlType);
+		Viewable<?> aclass = getViewable(sqlType);
 		return class2wrapper.get(aclass);
 	}
-	private Viewable getViewable(String sqlType) {
+	private Viewable<?> getViewable(String sqlType) {
 		String iliQname=ili2sqlName.mapSqlTableName(sqlType);
-		Viewable aclass=(Viewable) tag2class.get(iliQname);
+		Viewable<?> aclass=(Viewable<?>) tag2class.get(iliQname);
 		return aclass;
 	}
 	public String addAttrToInsertStmt(boolean isUpdate,
@@ -702,7 +703,7 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 		return sep;
 	}
 	public int addAttrValue(IomObject iomObj, String sqlType, long sqlId,
-			String sqlTableName,PreparedStatement ps, int valuei, AttributeDef attr,ArrayList structQueue)
+			String sqlTableName,PreparedStatement ps, int valuei, AttributeDef attr,ArrayList<StructWrapper> structQueue)
 			throws SQLException, ConverterException {
 		if(attr.getExtending()==null){
 			 String attrName=attr.getName();
@@ -909,7 +910,7 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 					if(type.isAbstract()){
 					}else{
 						PrecisionDecimal min=((NumericType)type).getMinimum();
-						PrecisionDecimal max=((NumericType)type).getMaximum();
+						//PrecisionDecimal max=((NumericType)type).getMaximum();
 						if(min.getAccuracy()>0){
 							if(value!=null){
 								try{
@@ -1020,7 +1021,7 @@ public class FromXtfRecordConverter extends AbstractRecordConverter {
 		typeCache.put(type,new Double(p));
 		return p;
 	}
-	private void enqueStructValue(ArrayList structQueue,long parentSqlId,String parentSqlType,String parentSqlAttr,IomObject struct,int structi,AttributeDef attr)
+	private void enqueStructValue(ArrayList<StructWrapper> structQueue,long parentSqlId,String parentSqlType,String parentSqlAttr,IomObject struct,int structi,AttributeDef attr)
 	{
 		structQueue.add(new StructWrapper(parentSqlId,parentSqlType,parentSqlAttr,struct,structi,attr));
 	}

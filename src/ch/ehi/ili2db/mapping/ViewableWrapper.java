@@ -6,6 +6,7 @@ import java.util.List;
 
 import ch.ehi.sqlgen.repository.DbTableName;
 import ch.interlis.ili2c.metamodel.AbstractClassDef;
+import ch.interlis.ili2c.metamodel.AbstractLeafElement;
 import ch.interlis.ili2c.metamodel.AssociationDef;
 import ch.interlis.ili2c.metamodel.AttributeDef;
 import ch.interlis.ili2c.metamodel.Domain;
@@ -26,7 +27,7 @@ public class ViewableWrapper {
 	private ViewableWrapper(String sqlSchemaname1,String sqlTablename1){
 		sqlTablename=new DbTableName(sqlSchemaname1,sqlTablename1);
 	}
-	public ViewableWrapper(String sqlSchemaname1,String sqlTablename1,Viewable viewable){
+	public ViewableWrapper(String sqlSchemaname1,String sqlTablename1,Viewable<?> viewable){
 		this(sqlSchemaname1,sqlTablename1);
 		this.viewable=viewable;
 	}
@@ -46,7 +47,7 @@ public class ViewableWrapper {
 	}
 	/** the viewable that this wrapper wraps.
 	 */
-	private Viewable viewable=null;
+	private Viewable<?> viewable=null;
 	/** the attributes and roles that this Record has.
 	 * list<Viewable.TransferElement>
 	 */
@@ -83,7 +84,7 @@ public class ViewableWrapper {
 
 	/** gets the viewable that this wrapper wraps.
 	 */
-	public Viewable getViewable() {
+	public Viewable<?> getViewable() {
 		  if(isSecondaryTable()){
 			  return getMainTable().getViewable();
 		  }
@@ -96,19 +97,19 @@ public class ViewableWrapper {
 		if(isSecondaryTable()){
 			return null;
 		}
-		Viewable def=getViewable();
+		Viewable<?> def=getViewable();
 		if(!(def instanceof AbstractClassDef)){
 			return null;
 		}
 		if((def instanceof Table) && !((Table)def).isIdentifiable()){
 			return null;
 		}
-		AbstractClassDef aclass=(AbstractClassDef) def;
+		AbstractClassDef<?> aclass=(AbstractClassDef<?>) def;
 		if(aclass.getOid()!=null){
 			return aclass.getOid();
 		}
 		for(Object exto : aclass.getExtensions()){
-			AbstractClassDef ext=(AbstractClassDef) exto;
+			AbstractClassDef<?> ext=(AbstractClassDef<?>) exto;
 			if(ext.getOid()!=null){
 				return ext.getOid();
 			}
@@ -145,10 +146,10 @@ public class ViewableWrapper {
 	public boolean isSecondaryTable() {
 		return mainTable!=null;
 	}
-	public boolean containsAttributes(HashSet<AttributeDef> iomObjectAttrs) {
+	public boolean containsAttributes(HashSet<AbstractLeafElement> hashSet) {
 		for(ViewableTransferElement ele:attrv){
 			if(ele.obj instanceof AttributeDef){
-				if(iomObjectAttrs.contains(ele.obj)){
+				if(hashSet.contains(ele.obj)){
 					return true;
 				}
 			}
